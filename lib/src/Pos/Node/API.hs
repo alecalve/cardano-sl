@@ -14,6 +14,8 @@ import qualified Data.Aeson.Options as Aeson
 import           Data.Aeson.TH as A
 import           Data.Aeson.Types (Value (..), toJSONKeyText)
 import qualified Data.ByteArray as ByteArray
+import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Char8 as BC8
 import qualified Data.Char as C
 import qualified Data.Map.Strict as Map
 import           Data.Swagger hiding (Example, example)
@@ -611,7 +613,7 @@ instance ToJSON (V1 Core.TxFeePolicy) where
             Core.TxFeePolicyUnknown policyTag policyPayload ->
                 [ "tag" .= ("unknown" :: String)
                 , "unknownTag" .= policyTag
-                , "unknownPayload" .= decodeUtf8 @Text policyPayload
+                , "unknownPayload" .= (BC8.unpack $ B64.encode policyPayload)
                 ]
 
 instance FromJSON (V1 Core.TxFeePolicy) where
@@ -621,15 +623,13 @@ instance FromJSON (V1 Core.TxFeePolicy) where
             "linear" ->
                 Core.TxFeePolicyTxSizeLinear <$> parseJSON j
             "unknown" ->
-                mkTxFeePolicyUnknown
+                Core.TxFeePolicyUnknown
                     <$> o .: "unknownTag"
-                    <*> o .: "unknownPayload"
+                    <*> (f <$> B64.decode <$> BC8.pack <$> (o .: "unknownPayload"))
             _ ->
                 aesonError "TxFeePolicy: unknown policy name") j
         where
-            mkTxFeePolicyUnknown policyTag policyPayload =
-                Core.TxFeePolicyUnknown policyTag
-                    (encodeUtf8 @Text @ByteString policyPayload)
+            f x = either (error "TODO") id x
 
 instance ToSchema (V1 Core.TxFeePolicy) where
     declareNamedSchema _ = do

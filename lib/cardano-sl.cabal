@@ -142,6 +142,7 @@ library
                         Pos.Communication.Server
 
   build-depends:        base
+                      , base64-bytestring
                       , aeson >= 0.11.2.1
                       , aeson-options
                       , ansi-terminal
