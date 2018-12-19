@@ -27,6 +27,7 @@
       "library" = {
         depends = ([
           (hsPkgs.base)
+          (hsPkgs.base64-bytestring)
           (hsPkgs.aeson)
           (hsPkgs.aeson-options)
           (hsPkgs.ansi-terminal)

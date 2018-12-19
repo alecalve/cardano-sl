@@ -13479,6 +13479,7 @@ license = stdenv.lib.licenses.bsd3;
 , ansi-wl-pprint
 , async
 , base
+, base64-bytestring
 , bytestring
 , canonical-json
 , cardano-crypto
@@ -13594,6 +13595,7 @@ ansi-terminal
 ansi-wl-pprint
 async
 base
+base64-bytestring
 bytestring
 canonical-json
 cardano-sl-binary
