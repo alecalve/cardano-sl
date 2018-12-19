@@ -622,14 +622,16 @@ instance FromJSON (V1 Core.TxFeePolicy) where
         case tag of
             "linear" ->
                 Core.TxFeePolicyTxSizeLinear <$> parseJSON j
-            "unknown" ->
-                Core.TxFeePolicyUnknown
-                    <$> o .: "unknownTag"
-                    <*> (f <$> B64.decode <$> BC8.pack <$> (o .: "unknownPayload"))
+            "unknown" -> do
+                t <- o .: "unknownTag"
+                p <- o .: "unknownPayload"
+                p' <- either
+                        (\x -> (aesonError $ "TxFeePolicy: invalid base64" <> show x))
+                        return
+                        $ B64.decode $ BC8.pack $ p
+                return $ Core.TxFeePolicyUnknown t p'
             _ ->
                 aesonError "TxFeePolicy: unknown policy name") j
-        where
-            f x = either (error "TODO") id x
 
 instance ToSchema (V1 Core.TxFeePolicy) where
     declareNamedSchema _ = do
