@@ -633,7 +633,6 @@ instance FromJSON (V1 Core.TxFeePolicy) where
 
 instance ToSchema (V1 Core.TxFeePolicy) where
     declareNamedSchema _ = do
-        let linear = error "TODO"
         pure $ NamedSchema (Just "Core.TxFeePolicy") $ mempty
             & type_ .~ SwaggerObject
             & required .~ ["tag"]
@@ -642,7 +641,18 @@ instance ToSchema (V1 Core.TxFeePolicy) where
                     & type_ .~ SwaggerString
                     & enum_ ?~ ["linear", "unknown"]
                     )
-                & at "data" ?~ linear
+                & at "a" ?~ (Inline $ mempty
+                    & type_ .~ SwaggerNumber
+                    )
+                & at "b" ?~ (Inline $ mempty
+                    & type_ .~ SwaggerNumber
+                    )
+                & at "unknownTag" ?~ (Inline $ mempty
+                    & type_ .~ SwaggerObject
+                    )
+                & at "unknownPayload" ?~ (Inline $ mempty
+                    & type_ .~ SwaggerString
+                    )
                 )
 
 instance Arbitrary (V1 Core.SlotCount) where
