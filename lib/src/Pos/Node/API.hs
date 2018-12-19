@@ -12,10 +12,9 @@ import           Control.Lens (At, Index, IxValue, at, ix, makePrisms, (?~))
 import           Data.Aeson
 import qualified Data.Aeson.Options as Aeson
 import           Data.Aeson.TH as A
-import           Data.Aeson.Types (Parser, Value (..), toJSONKeyText)
+import           Data.Aeson.Types (Value (..), toJSONKeyText)
 import qualified Data.ByteArray as ByteArray
 import qualified Data.Char as C
-import qualified Data.HashMap.Strict as HM.S
 import qualified Data.Map.Strict as Map
 import           Data.Swagger hiding (Example, example)
 import qualified Data.Swagger as S
@@ -47,7 +46,7 @@ import           Pos.Util.Example
 import           Pos.Util.Servant (APIResponse, CustomQueryFlag, Flaggable (..),
                      HasCustomQueryFlagDescription (..), Tags, ValidJSON)
 import           Pos.Util.UnitsOfMeasure
-import           Pos.Util.Util (aesonError, toAesonError)
+import           Pos.Util.Util (aesonError)
 import           Serokell.Util.Text
 
 -- ToJSON/FromJSON instances for NodeId
@@ -604,39 +603,46 @@ instance Arbitrary (V1 Core.TxFeePolicy) where
 instance ToJSON (V1 Core.TxFeePolicy) where
     toJSON (V1 p) =
         object $ case p of
-            Core.TxFeePolicyTxSizeLinear linear -> ["linear" .= linear]
+            Core.TxFeePolicyTxSizeLinear (Core.TxSizeLinear a b) ->
+                [ "tag" .= ("linear" :: String)
+                , "a" .= toJSON a
+                , "b" .= toJSON b
+                ]
             Core.TxFeePolicyUnknown policyTag policyPayload ->
-                ["unknown" .= (policyTag, decodeUtf8 @Text policyPayload)]
+                [ "tag" .= ("unknown" :: String)
+                , "unknownTag" .= policyTag
+                , "unknownPayload" .= decodeUtf8 @Text policyPayload
+                ]
 
 instance FromJSON (V1 Core.TxFeePolicy) where
-    parseJSON = V1 <<$>> (withObject "TxFeePolicy" $ \o -> do
-        (policyName, policyBody) <- toAesonError $ case HM.S.toList o of
-            []  -> Left "TxFeePolicy: none provided"
-            [a] -> Right a
-            _   -> Left "TxFeePolicy: ambiguous choice"
-        let
-          policyParser :: FromJSON p => Parser p
-          policyParser = parseJSON policyBody
-        case policyName of
+    parseJSON j = V1 <$> (withObject "TxFeePolicy" $ \o -> do
+        (tag :: String) <- o .: "tag"
+        case tag of
             "linear" ->
-                Core.TxFeePolicyTxSizeLinear <$> policyParser
+                Core.TxFeePolicyTxSizeLinear <$> parseJSON j
             "unknown" ->
-                mkTxFeePolicyUnknown <$> policyParser
+                mkTxFeePolicyUnknown
+                    <$> o .: "unknownTag"
+                    <*> o .: "unknownPayload"
             _ ->
-                aesonError "TxFeePolicy: unknown policy name")
+                aesonError "TxFeePolicy: unknown policy name") j
         where
-            mkTxFeePolicyUnknown (policyTag, policyPayload) =
+            mkTxFeePolicyUnknown policyTag policyPayload =
                 Core.TxFeePolicyUnknown policyTag
                     (encodeUtf8 @Text @ByteString policyPayload)
 
 instance ToSchema (V1 Core.TxFeePolicy) where
     declareNamedSchema _ = do
+        let linear = error "TODO"
         pure $ NamedSchema (Just "Core.TxFeePolicy") $ mempty
             & type_ .~ SwaggerObject
+            & required .~ ["tag"]
             & properties .~ (mempty
                 & at "tag" ?~ (Inline $ mempty
-                    & type_ .~ SwaggerNumber -- FIXME: wrong
+                    & type_ .~ SwaggerString
+                    & enum_ ?~ ["linear", "unknown"]
                     )
+                & at "data" ?~ linear
                 )
 
 instance Arbitrary (V1 Core.SlotCount) where
