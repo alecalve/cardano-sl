@@ -48,9 +48,9 @@
     };
   } // {
     src = pkgs.fetchgit {
-      url = "https://github.com/primetype/inspector.git";
-      rev = "964558881210bf1f9387b51ab05057b1290d1d71";
-      sha256 = "1ig1gb131z37jbg5ih2lv609f4jgw9wmm6lcxdclihjq5lm12b7n";
+      url = "https://github.com/angerman/inspector.git";
+      rev = "9215d64b8a05d366d31135b89644823ecdc3efb8";
+      sha256 = "12q1v7a8kcw7qi4lws4j3mvxwfkhni6zmp870kmnkgbgwvrax9gs";
     };
   }) // {
     cabal-generator = "hpack";

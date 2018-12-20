@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Main where
 
 import           Universum
@@ -17,6 +18,9 @@ import           Cardano.Cluster.Environment.Spec
                      prop_edgesTopologyBehindNat,
                      prop_generatedEnvironmentIsValid)
 
+#if mingw32_HOST_OS
+import           System.IO (hSetEncoding, stderr, stdout, utf8)
+#endif
 
 main :: IO ()
 main = evalResults
@@ -45,6 +49,10 @@ main = evalResults
 -- fails if one or more them returned a failure.
 evalResults :: [IO (String, Result)] -> IO ()
 evalResults xs = do
+#if mingw32_HOST_OS
+    hSetEncoding stdout utf8
+    hSetEncoding stderr utf8
+#endif
     ys <- sequence xs
     case filter (not . isSuccess . snd) ys of
         [] -> pure ()
